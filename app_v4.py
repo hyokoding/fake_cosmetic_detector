@@ -115,10 +115,12 @@ def crawl_11st(url):
             'Referer': 'https://www.11st.co.kr/',
         }
         resp = requests.get(url, headers=headers, timeout=15)
+        st.write(f"🔍 HTTP 상태코드: {resp.status_code} / 응답길이: {len(resp.text)}")
         html = resp.text
         name_m  = re.search(r'"name"\s*:\s*"([^"]+)"', html)
         price_m = re.search(r'"price"\s*:\s*(\d+)', html)
         img_m   = re.search(r'"image"\s*:\s*"([^"]+)"', html)
+        st.write(f"🔍 name: {name_m.group(1) if name_m else 'None'} / price: {price_m.group(1) if price_m else 'None'}")
         return {
             'product_name':      name_m.group(1) if name_m else '',
             'price':             int(price_m.group(1)) if price_m else None,
@@ -126,7 +128,8 @@ def crawl_11st(url):
             'delivery_overseas': 1 if '해외배송' in html else 0,
             'platform':          '11번가',
         }
-    except Exception:
+    except Exception as e:
+        st.error(f"크롤링 에러: {e}")
         return None
 
 def crawl_ssg(url):
