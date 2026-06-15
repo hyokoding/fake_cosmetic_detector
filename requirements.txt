@@ -11,3 +11,6 @@ joblib
 opencv-python-headless
 playwright
 selenium
+torch
+torchvision
+transformers
