@@ -1,11 +1,8 @@
 """
 가품 탐지 Streamlit 앱 v4
 ========================================
-피처: price_rate_num, lap_v3_gap, store_rank, store_like_log,
-      label_dist (DINOv2), clip_dist (CLIP) + platform OHE
+피처: price_rate_num, store_rank, store_like_log + platform OHE
 모델: CatBoost Stage2 (model_cat_v2.pkl)
-공식 이미지: official_product_dataset.xlsx 기준
-조말론: 브랜드+용량 평균 임베딩 사용
 
 실행: streamlit run app_v4.py
 필요 파일: model_cat_v2.pkl, official_product_dataset.xlsx
@@ -16,16 +13,9 @@ import pickle
 import warnings
 import numpy as np
 import pandas as pd
-import cv2
 import requests
 import streamlit as st
-from PIL import Image
-from io import BytesIO
-import os
 
-os.environ['TOKENIZERS_PARALLELISM'] = 'false'
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
-os.environ['OMP_NUM_THREADS'] = '1'
 
 warnings.filterwarnings('ignore')
 
@@ -64,10 +54,10 @@ def load_model():
 
 @st.cache_resource
 def load_official_data():
-    """official_embeddings_v2.pkl 로드 (precompute_official_embeddings.py로 사전 생성 필요)"""
+    """official_embeddings_v2.pkl 로드"""
     import os
     if not os.path.exists(EMBED_PATH):
-        st.error(f"❌ {EMBED_PATH} 파일이 없어요! precompute_official_embeddings.py 먼저 실행해주세요.")
+        st.error(f"❌ {EMBED_PATH} 파일이 없어요!")
         st.stop()
     with open(EMBED_PATH, 'rb') as f:
         return pickle.load(f)
