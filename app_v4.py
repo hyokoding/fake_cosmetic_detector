@@ -19,8 +19,6 @@ import pandas as pd
 import cv2
 import requests
 import streamlit as st
-import torch
-import torch.nn.functional as F
 from PIL import Image
 from io import BytesIO
 import os
@@ -31,7 +29,6 @@ os.environ['OMP_NUM_THREADS'] = '1'
 
 warnings.filterwarnings('ignore')
 
-from transformers import CLIPModel, CLIPProcessor, AutoImageProcessor, AutoModel
 
 # ════════════════════════════════════════════════════════════
 # 0. 설정
@@ -56,7 +53,6 @@ FEATURE_LABELS = {
     'platform_ssg':        '플랫폼_SSG',
 }
 
-_device = torch.device('cpu')
 
 # ════════════════════════════════════════════════════════════
 # 1. 모델 & 리소스 로드 (캐시)
@@ -65,20 +61,6 @@ _device = torch.device('cpu')
 def load_model():
     with open(MODEL_PATH, 'rb') as f:
         return pickle.load(f)
-
-@st.cache_resource
-def load_clip():
-    processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-    model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32").to(_device)
-    model.eval()
-    return model, processor
-
-@st.cache_resource
-def load_dino():
-    processor = AutoImageProcessor.from_pretrained("facebook/dinov2-base")
-    model = AutoModel.from_pretrained("facebook/dinov2-base").to(_device)
-    model.eval()
-    return model, processor
 
 @st.cache_resource
 def load_official_data():
@@ -130,31 +112,6 @@ def download_pil(url, timeout=10, max_retries=2):
             if attempt < max_retries:
                 import time; time.sleep(1)
     return None
-
-def get_clip_emb(img_pil, model, processor):
-    inputs = processor(images=img_pil, return_tensors="pt").to(_device)
-    with torch.no_grad():
-        feat = model.get_image_features(**inputs)
-    if not isinstance(feat, torch.Tensor):
-        feat = feat.pooler_output
-    return F.normalize(feat.float(), dim=-1).cpu()
-
-def get_dino_emb(img_pil, model, processor):
-    inputs = processor(images=img_pil, return_tensors="pt").to(_device)
-    with torch.no_grad():
-        out  = model(**inputs)
-        feat = out.last_hidden_state[:, 0]
-    return F.normalize(feat.float(), dim=-1).cpu()
-
-def cosine_dist(a, b):
-    return float(1 - F.cosine_similarity(a, b).item())
-
-def calc_laplacian(img_pil):
-    if img_pil is None:
-        return 0.0
-    img_cv = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
-    gray   = cv2.cvtColor(img_cv, cv2.COLOR_BGR2GRAY)
-    return float(cv2.Laplacian(gray, cv2.CV_64F).var())
 
 # ════════════════════════════════════════════════════════════
 # 3. 플랫폼별 크롤러
